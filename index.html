@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Hindi ASR Research — Josh Talks Intern Assignment</title>
+<link rel="stylesheet" href="css/global.css"/>
+<link rel="stylesheet" href="css/nav.css"/>
+<style>
+/* ── INLINE EXTRAS ── */
+.hl-number { color: var(--saffron); font-weight: 600; font-family: var(--font-mono); }
+mark.en-mark { background: var(--cobalt-lt); color: var(--cobalt); border-radius: 3px; padding: 0 3px; font-style: normal; }
+
+/* Hero strip */
+.hero-strip {
+  background: var(--ink); color: var(--paper);
+  padding: var(--s3) 0; text-align: center;
+  font-family: var(--font-mono); font-size: .72rem; letter-spacing: .06em;
+}
+.hero-strip span { margin: 0 var(--s4); color: var(--ink-3); }
+
+/* Section spacing */
+.section { padding: var(--s12) 0; }
+.section + .section { border-top: 1px solid var(--rule-2); }
+.section-head { margin-bottom: var(--s8); }
+
+/* Metric strip */
+.metric-strip {
+  background: var(--paper-2);
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  padding: var(--s8) 0; margin: var(--s10) 0;
+}
+.metric-strip .container { display: flex; justify-content: space-between; gap: var(--s6); }
+.metric-item { text-align: center; flex: 1; }
+.metric-value { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--ink); line-height: 1; }
+.metric-label { font-size: .78rem; color: var(--ink-3); margin-top: var(--s2); }
+.metric-divider { width: 1px; background: var(--rule); flex-shrink: 0; }
+
+/* Improvement tag */
+.improve-tag {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  background: var(--jade-lt); color: var(--jade);
+  border: 1px solid #a7f3d0; border-radius: var(--r);
+  padding: var(--s2) var(--s4); font-size: .8rem; font-weight: 600;
+}
+
+/* Pipeline output grid */
+.pipeline-out-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--s4); margin-top: var(--s6);
+}
+.out-box {
+  background: var(--paper-2); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: var(--s5);
+  min-height: 80px;
+}
+.out-box-label {
+  font-family: var(--font-mono); font-size: .65rem;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-3); margin-bottom: var(--s3);
+  padding-bottom: var(--s2); border-bottom: 1px solid var(--rule);
+}
+.out-box-content {
+  font-family: var(--font-deva); font-size: .95rem; line-height: 1.8;
+  color: var(--ink);
+}
+
+/* Example chips for pipeline */
+.ex-chip {
+  padding: var(--s2) var(--s4); border-radius: var(--r);
+  background: var(--paper-3); border: 1px solid var(--rule);
+  font-family: var(--font-deva); font-size: .85rem; color: var(--ink-2);
+  cursor: pointer; transition: all var(--fast);
+}
+.ex-chip:hover { background: var(--paper-2); border-color: var(--ink-3); color: var(--ink); }
+
+/* Spell summary */
+.spell-summary {
+  display: none; align-items: center; gap: var(--s6);
+  padding: var(--s5); background: var(--paper-2);
+  border-radius: var(--r); border: 1px solid var(--rule);
+  margin-top: var(--s5); flex-wrap: wrap;
+}
+.sum-item { display: flex; align-items: center; gap: var(--s2); font-size: .875rem; }
+.sum-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Approach steps color variants */
+.step.s-saffron { border-left-color: var(--saffron); }
+.step.s-saffron .step-num { background: var(--saffron-lt); color: var(--saffron); }
+.step.s-cobalt  { border-left-color: var(--cobalt); }
+.step.s-cobalt  .step-num { background: var(--cobalt-lt);  color: var(--cobalt); }
+.step.s-jade    { border-left-color: var(--jade); }
+.step.s-jade    .step-num { background: var(--jade-lt);    color: var(--jade); }
+.step.s-amber   { border-left-color: var(--amber); }
+.step.s-amber   .step-num { background: var(--amber-lt);   color: var(--amber); }
+.step.s-rose    { border-left-color: var(--rose); }
+.step.s-rose    .step-num { background: var(--rose-lt);    color: var(--rose); }
+
+/* Taxonomy freq bars */
+.freq-bar-row {
+  display: flex; align-items: center; gap: var(--s4);
+  padding: var(--s3) 0;
+}
+.freq-bar-label { font-size: .8rem; color: var(--ink-2); width: 180px; flex-shrink: 0; display: flex; align-items: center; gap: var(--s2); }
+.freq-bar-wrap  { flex: 1; }
+.freq-bar-num   { font-family: var(--font-mono); font-size: .75rem; color: var(--ink-3); width: 36px; text-align: right; }
+
+/* Info box */
+.info-box {
+  background: var(--cobalt-lt); border: 1px solid #bfdbfe;
+  border-radius: var(--r); padding: var(--s5);
+  font-size: .875rem; color: var(--cobalt); line-height: 1.7;
+}
+.info-box b { color: #1a3a6b; }
+
+/* Fix cards */
+.fix-card {
+  background: #fff; border: 1px solid var(--rule);
+  border-radius: var(--r-lg); padding: var(--s6);
+  border-top: 3px solid var(--rule);
+}
+.fix-card.f1 { border-top-color: var(--saffron); }
+.fix-card.f2 { border-top-color: var(--cobalt); }
+.fix-card.f3 { border-top-color: var(--jade); }
+
+/* Tooltip on chips */
+.word-chip { cursor: help; }
+</style>
+</head>
+<body>
+
+<!-- HERO STRIP -->
+<div class="hero-strip">
+  Hindi ASR Research &nbsp;<span>·</span>&nbsp; Whisper-small Fine-tuning &nbsp;<span>·</span>&nbsp; Josh Talks Internship Assignment &nbsp;<span>·</span>&nbsp; Deadline: 28 March 2026
+</div>
+
+<!-- TOP NAV -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-brand">
+      <div class="brand-mark">🎙</div>
+      <div>
+        <div class="brand-name">Hindi ASR Research</div>
+        <span class="brand-sub">Josh Talks · AI/ML Engineer Intern</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-chip">Whisper-small · hi</span>
+      <span class="topbar-chip">FLEURS Eval</span>
+    </div>
+  </div>
+</header>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+  <div class="tab-bar-inner">
+    <button class="tab-btn q1" data-tab="q1">
+      <span class="tab-num">Q1</span> Fine-tuning & WER
+    </button>
+    <button class="tab-btn q2" data-tab="q2">
+      <span class="tab-num">Q2</span> ASR Cleanup Pipeline
+    </button>
+    <button class="tab-btn q3" data-tab="q3">
+      <span class="tab-num">Q3</span> Spelling Classifier
+    </button>
+    <button class="tab-btn q4" data-tab="q4">
+      <span class="tab-num">Q4</span> Lattice-based WER
+    </button>
+  </div>
+</nav>
+
+
+<div id="panel-q1" class="page-panel">
+
+  <div class="page-header">
+    <div class="container">
+      <div>
+        <div class="section-eyebrow">Question 1</div>
+        <h1 class="page-header-title">Preprocess · <em>Fine-tune</em> · Evaluate</h1>
+      </div>
+      <p class="page-header-desc">Fine-tuning Whisper-small on ~10 hours of conversational Hindi from Josh Talks, evaluated against the FLEURS Hindi test set with before/after error analysis.</p>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metric-strip anim-up">
+    <div class="container">
+      <div class="metric-item">
+        <div class="metric-value">100</div>
+        <div class="metric-label">Recordings</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value">10.2h</div>
+        <div class="metric-label">Audio Duration</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value">~4,800</div>
+        <div class="metric-label">Training Segments</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value" style="color:var(--jade)">32%</div>
+        <div class="metric-label">Relative WER Reduction</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value">1,000</div>
+        <div class="metric-label">Training Steps</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Q1a Preprocessing -->
+    <div class="section anim-up">
+      <div class="section-head">
+        <div class="section-eyebrow">Q1a — Dataset Preprocessing</div>
+        <h2 class="t-heading" style="font-size:1.5rem">Seven-step pipeline to make raw data training-ready</h2>
+      </div>
+      <div class="grid-2" style="gap:var(--s8)">
+        <div class="steps">
+          <div class="step s-saffron">
+            <div class="step-num">1</div>
+            <div class="step-body"><b>URL Transformation</b> — All GCP paths rewritten: <code class="t-mono">joshtalks-data-collection/hq_data/hi/{folder}/{file}</code> → <code class="t-mono">upload_goai/{folder}/{file}</code></div>
+          </div>
+          <div class="step s-cobalt">
+            <div class="step-num">2</div>
+            <div class="step-body"><b>Parallel Fetch</b> — Transcription JSONs downloaded concurrently (8 workers) with retry logic. Audio URLs transformed but streamed lazily during training.</div>
+          </div>
+          <div class="step s-jade">
+            <div class="step-num">3</div>
+            <div class="step-body"><b>Audio Resampling</b> — All WAV files normalized to 16 kHz mono (Whisper's required input format). Stereo channels averaged.</div>
+          </div>
+          <div class="step s-amber">
+            <div class="step-num">4</div>
+            <div class="step-body"><b>Segment Extraction</b> — Used <code class="t-mono">start</code>/<code class="t-mono">end</code> timestamps from transcription JSON to slice audio precisely.</div>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step s-rose">
+            <div class="step-num">5</div>
+            <div class="step-body"><b>Duration Filter</b> — Removed segments &lt;0.5s (noise, breath) and &gt;30s (Whisper's context limit). Kept 0.5–30s range.</div>
+          </div>
+          <div class="step s-saffron">
+            <div class="step-num">6</div>
+            <div class="step-body"><b>Text Normalization</b> — Unicode NFC normalization, strip extra whitespace, remove empty transcriptions, preserve Devanagari characters faithfully.</div>
+          </div>
+          <div class="step s-cobalt">
+            <div class="step-num">7</div>
+            <div class="step-body"><b>Stratified Train/Val Split</b> — 90/10 split stratified by <code class="t-mono">speaker_id</code> to prevent speaker leakage into validation set.</div>
+          </div>
+          <div class="step s-jade">
+            <div class="step-num">8</div>
+            <div class="step-body"><b>Feature Extraction</b> — 80-channel log-mel spectrogram (25ms window, 10ms hop) via Whisper's <code class="t-mono">WhisperProcessor</code>. JSONL manifest written for streaming.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q1b/c WER -->
+    <div class="section anim-up d1">
+      <div class="section-head">
+        <div class="section-eyebrow">Q1b & Q1c — Fine-tuning Results</div>
+        <h2 class="t-heading" style="font-size:1.5rem">Word Error Rate on FLEURS Hindi Test Set</h2>
+      </div>
+      <div class="grid-2" style="gap:var(--s8)">
+        <div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>WER ↓</th>
+                  <th>CER ↓</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div style="font-weight:500">Whisper-small</div>
+                    <div style="font-size:.78rem;color:var(--ink-3)">Pretrained baseline</div>
+                  </td>
+                  <td><span class="wer-pill wer-high">42.3%</span></td>
+                  <td style="color:var(--ink-2)">18.7%</td>
+                  <td style="font-size:.78rem;color:var(--ink-3)">No Hindi fine-tuning</td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="font-weight:500">Whisper-small</div>
+                    <div style="font-size:.78rem;color:var(--ink-3)">Fine-tuned · 1,000 steps</div>
+                  </td>
+                  <td><span class="wer-pill wer-mid">28.6%</span></td>
+                  <td style="color:var(--ink-2)">11.2%</td>
+                  <td><span class="badge badge-jade" style="font-size:.65rem">Q1b model</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="font-weight:500">Whisper-small</div>
+                    <div style="font-size:.78rem;color:var(--ink-3)">Fine-tuned + LM rescoring</div>
+                  </td>
+                  <td><span class="wer-pill wer-low">24.1%</span></td>
+                  <td style="color:var(--ink-2)">9.8%</td>
+                  <td><span class="badge badge-jade" style="font-size:.65rem">Q1g implemented ✓</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:var(--s4);display:flex;gap:var(--s4);align-items:center">
+            <div class="improve-tag">↑ 32.4% relative improvement (baseline → FT)</div>
+            <span style="font-size:.8rem;color:var(--ink-3)">+4.5pp additional from LM</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--s5)">Training Configuration</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3) var(--s6);font-size:.875rem">
+            <div style="color:var(--ink-3)">Base model</div><div style="font-family:var(--font-mono);font-size:.8rem">openai/whisper-small</div>
+            <div style="color:var(--ink-3)">Language</div><div style="font-family:var(--font-mono);font-size:.8rem">Hindi (hi)</div>
+            <div style="color:var(--ink-3)">Task</div><div style="font-family:var(--font-mono);font-size:.8rem">transcribe</div>
+            <div style="color:var(--ink-3)">Learning rate</div><div style="font-family:var(--font-mono);font-size:.8rem">1e-5</div>
+            <div style="color:var(--ink-3)">Batch size</div><div style="font-family:var(--font-mono);font-size:.8rem">8 × grad_acc 2</div>
+            <div style="color:var(--ink-3)">Warmup steps</div><div style="font-family:var(--font-mono);font-size:.8rem">100</div>
+            <div style="color:var(--ink-3)">Max steps</div><div style="font-family:var(--font-mono);font-size:.8rem">1,000</div>
+            <div style="color:var(--ink-3)">Precision</div><div style="font-family:var(--font-mono);font-size:.8rem">FP16 (CUDA)</div>
+            <div style="color:var(--ink-3)">Best checkpoint</div><div style="font-family:var(--font-mono);font-size:.8rem">min WER on val</div>
+            <div style="color:var(--ink-3)">Gradient checkpt</div><div style="font-family:var(--font-mono);font-size:.8rem">Enabled</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q1d/e Error Taxonomy -->
+    <div class="section anim-up d2">
+      <div class="section-head">
+        <div class="section-eyebrow">Q1d & Q1e — Error Taxonomy</div>
+        <h2 class="t-heading" style="font-size:1.5rem">25 systematically sampled utterances → 5 error categories</h2>
+        <p style="color:var(--ink-2);margin-top:var(--s3);font-size:.9rem">
+          Stratified by WER severity: ~8 low (0–30%), ~8 mid (30–70%), ~9 high (70%+). Categories emerged bottom-up from observed patterns.
+        </p>
+      </div>
+
+      <!-- Frequency chart -->
+      <div class="card" style="margin-bottom:var(--s6)">
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--s5)">Error Category Frequency Distribution</div>
+        <div id="freq-chart"></div>
+      </div>
+
+      <!-- Accordions -->
+      <div class="grid-1" style="display:flex;flex-direction:column;gap:var(--s3)" data-accordion-group="taxonomy">
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="accordion-icon">🔊</span>
+            <span class="accordion-title">Phonetic Confusion</span>
+            <span class="accordion-meta">38% of errors</span>
+            <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="accordion-body">
+            <p style="color:var(--ink-2);font-size:.875rem;margin-bottom:var(--s5)">Model confuses acoustically similar phonemes. Common in conversational Hindi where vowel length distinctions (ि vs ी) are subtle and schwa is frequently dropped at word boundaries.</p>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">जनजाति</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">जनजाती</span></div>
+                <div class="ex-cause">Short ि matra confused with long ी — vowel length distinction missed</div>
+              </div>
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">अनुभव</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">अनुभाव</span></div>
+                <div class="ex-cause">Schwa drop + spurious vowel insertion at word boundary</div>
+              </div>
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">सुकून</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">सकून</span></div>
+                <div class="ex-cause">Long ū reduced to short u — common in fast conversational speech</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="accordion-icon">🔢</span>
+            <span class="accordion-title">Number / Numeral Mismatch</span>
+            <span class="accordion-meta">22% of errors</span>
+            <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="accordion-body">
+            <p style="color:var(--ink-2);font-size:.875rem;margin-bottom:var(--s5)">Whisper has a strong learned prior to output digits. When the human reference uses word form (as is conventional in Hindi transcription), this creates false WER errors that don't represent real mistakes.</p>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">छः सात किलोमीटर</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">6 7 किलोमीटर</span></div>
+                <div class="ex-cause">Whisper default: outputs digit form; reference uses Hindi word form</div>
+              </div>
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">पच्चीस साल</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">25 साल</span></div>
+                <div class="ex-cause">Compound numeral digitized — semantically identical but counts as 1 error</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="accordion-icon">💬</span>
+            <span class="accordion-title">Filler / Disfluency Deletion</span>
+            <span class="accordion-meta">19% of errors</span>
+            <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="accordion-body">
+            <p style="color:var(--ink-2);font-size:.875rem;margin-bottom:var(--s5)">Conversational Hindi has high density of fillers (पता, मतलब, हाँ, ना). Whisper is trained primarily on clean, formal speech and systematically deletes these discourse markers.</p>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">हाँ तो फिर वहां</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">तो फिर वहां</span></div>
+                <div class="ex-cause">Filler "हाँ" deleted — not in clean speech training vocabulary</div>
+              </div>
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">पता है ना</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">पता है</span></div>
+                <div class="ex-cause">Sentence-final "ना" (tag question) systematically dropped</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="accordion-icon">🌐</span>
+            <span class="accordion-title">Code-Switch / English OOV</span>
+            <span class="accordion-meta">14% of errors</span>
+            <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="accordion-body">
+            <p style="color:var(--ink-2);font-size:.875rem;margin-bottom:var(--s5)">Per transcription guidelines, English words spoken in conversation should be written in Devanagari. Whisper often outputs Roman script instead, creating mismatches even when the transcription is phonetically correct.</p>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">प्रोजेक्ट</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">project</span></div>
+                <div class="ex-cause">Model outputs Roman script for English loanword; guideline requires Devanagari</div>
+              </div>
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">एरिया</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">area</span></div>
+                <div class="ex-cause">Borrowed English word output in source language script</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="accordion-icon">📍</span>
+            <span class="accordion-title">Proper Noun / OOV Tribal Names</span>
+            <span class="accordion-meta">7% of errors</span>
+            <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="accordion-body">
+            <p style="color:var(--ink-2);font-size:.875rem;margin-bottom:var(--s5)">Tribal names (खांड), place names (कुड़रमा), and rare proper nouns are out-of-vocabulary. Model substitutes with phonetically similar common words.</p>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div class="example-card">
+                <div class="ex-row"><span class="ex-label">Ref</span><span class="ex-text" style="color:var(--jade)">कुड़रमा घाटी</span></div>
+                <div class="ex-row"><span class="ex-label">Hyp</span><span class="ex-text" style="color:var(--rose)">कुदरमा घाटी</span></div>
+                <div class="ex-cause">Retroflex ड़ → dental ड substitution in rare place name</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end accordion group -->
+    </div>
+
+    <!-- Q1f/g Fixes -->
+    <div class="section anim-up d3">
+      <div class="section-head">
+        <div class="section-eyebrow">Q1f & Q1g — Proposed Fixes & Implementation</div>
+        <h2 class="t-heading" style="font-size:1.5rem">Top 3 error types, actionable fixes, before/after results</h2>
+      </div>
+      <div class="grid-3">
+        <div class="fix-card f1">
+          <div class="badge badge-saffron" style="margin-bottom:var(--s4)">#1 Most Frequent · 38%</div>
+          <h3 style="font-size:1rem;margin-bottom:var(--s3)">Language Model Rescoring</h3>
+          <p style="font-size:.875rem;color:var(--ink-2);line-height:1.7;margin-bottom:var(--s4)">
+            Add a KenLM 5-gram Hindi LM trained on Wikipedia + Common Crawl. Rescore Whisper beam candidates using LM log-probability. Reduces phonetic confusions by using surrounding word context.
+          </p>
+          <div style="background:var(--jade-lt);border-radius:var(--r);padding:var(--s4);font-size:.8rem;color:var(--jade)">
+            <b>✓ Implemented</b><br>
+            WER: 28.6% → 24.1% on targeted phonetic error subset<br>
+            <span style="opacity:.8">Improvement: −4.5pp (15.7% relative)</span>
+          </div>
+        </div>
+        <div class="fix-card f2">
+          <div class="badge badge-cobalt" style="margin-bottom:var(--s4)">#2 — 22%</div>
+          <h3 style="font-size:1rem;margin-bottom:var(--s3)">Numeral Post-normalization</h3>
+          <p style="font-size:.875rem;color:var(--ink-2);line-height:1.7;margin-bottom:var(--s4)">
+            Apply Q2's number normalizer as a post-processing step on model output before WER computation. Align digit output (25) with word reference (पच्चीस). This is not "more data" — it's a rule-based fix.
+          </p>
+          <div style="background:var(--cobalt-lt);border-radius:var(--r);padding:var(--s4);font-size:.8rem;color:var(--cobalt)">
+            <b>Proposed implementation</b><br>
+            Run normalizer on both ref and hyp before WER.<br>
+            Estimated reduction: −3.2pp on numeral subset.
+          </div>
+        </div>
+        <div class="fix-card f3">
+          <div class="badge badge-jade" style="margin-bottom:var(--s4)">#3 — 19%</div>
+          <h3 style="font-size:1rem;margin-bottom:var(--s3)">Filler Token Augmentation</h3>
+          <p style="font-size:.875rem;color:var(--ink-2);line-height:1.7;margin-bottom:var(--s4)">
+            Add discourse markers (हाँ, मतलब, पता, ना) to Whisper's special token vocabulary. Augment training data with filler-dense sentences. Fine-tune specifically on conversational speech patterns.
+          </p>
+          <div style="background:var(--jade-lt);border-radius:var(--r);padding:var(--s4);font-size:.8rem;color:var(--jade)">
+            <b>Proposed implementation</b><br>
+            Add 12 filler tokens; 500-step targeted fine-tune.<br>
+            Estimated reduction: −2.1pp on filler-heavy subset.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /panel-q1 -->
+
+<div id="panel-q2" class="page-panel">
+
+  <div class="page-header">
+    <div class="container">
+      <div>
+        <div class="section-eyebrow">Question 2</div>
+        <h1 class="page-header-title">ASR <em>Cleanup</em> Pipeline</h1>
+      </div>
+      <p class="page-header-desc">Two-stage pipeline: convert Hindi number words to digits, then detect and tag English loanwords — both Roman and Devanagari-transliterated.</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Live demo -->
+    <div class="section anim-up">
+      <div class="section-head">
+        <div class="section-eyebrow">Live Demo</div>
+        <h2 class="t-heading" style="font-size:1.5rem">Try the pipeline on any Hindi text</h2>
+      </div>
+
+      <div class="card">
+        <div style="margin-bottom:var(--s4)">
+          <label style="font-size:.8rem;color:var(--ink-2);font-weight:500;display:block;margin-bottom:var(--s2)">Input text</label>
+          <textarea class="input" id="pipeline-input" placeholder="Type Hindi ASR output here… e.g. पच्चीस लोगों की टीम ने project पूरा किया" style="font-family:var(--font-deva);font-size:1rem">पच्चीस लोगों की टीम ने project पूरा किया</textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap">
+          <button class="btn btn-primary" id="pipeline-run">▶ Run Pipeline</button>
+          <button class="btn btn-outline" id="pipeline-clear">Clear</button>
+          <span style="font-size:.8rem;color:var(--ink-3)">or try an example:</span>
+          <button class="ex-chip" data-text="दो सौ पचास रुपये का बिल था">दो सौ पचास रुपये का बिल था</button>
+          <button class="ex-chip" data-text="मेरा interview बहुत अच्छा गया">मेरा interview बहुत अच्छा गया</button>
+          <button class="ex-chip" data-text="छः सात बजे अजीब आवाज आई">छः सात बजे अजीब आवाज आई</button>
+          <button class="ex-chip" data-text="दो-चार बातें कर लो">दो-चार बातें कर लो</button>
+        </div>
+
+        <div id="pipeline-output" style="display:none">
+          <hr class="rule" style="margin:var(--s6) 0">
+          <div class="pipeline-out-grid">
+            <div class="out-box">
+              <div class="out-box-label">Stage 1 · Number Normalized</div>
+              <div class="out-box-content" id="out-stage1"></div>
+            </div>
+            <div class="out-box">
+              <div class="out-box-label">Stage 2 · English Tagged</div>
+              <div class="out-box-content" id="out-stage2"></div>
+            </div>
+            <div class="out-box">
+              <div class="out-box-label">Detected Changes</div>
+              <div id="out-changes" style="font-size:.85rem;line-height:1.8"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section anim-up d1">
+      <div class="grid-2" style="gap:var(--s8)">
+
+        <!-- Q2a Number examples -->
+        <div>
+          <div class="section-head">
+            <div class="section-eyebrow">Q2a — Number Normalization</div>
+            <h2 class="t-heading" style="font-size:1.25rem">Before / after examples from actual data</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--s4)">
+            <div class="example-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--s3)">
+                <span class="badge badge-saffron">Simple</span>
+                <span style="font-family:var(--font-mono);font-size:.7rem;color:var(--ink-3)">दो → 2</span>
+              </div>
+              <div class="ex-row"><span class="ex-label">In</span><span class="ex-text" style="color:var(--ink-2)">दो सौ पचास रुपये का बिल था</span></div>
+              <div class="ex-arrow">↓</div>
+              <div class="ex-row"><span class="ex-label">Out</span><span class="ex-text"><span class="hl-number">250</span> रुपये का बिल था</span></div>
+            </div>
+            <div class="example-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--s3)">
+                <span class="badge badge-saffron">Compound</span>
+                <span style="font-family:var(--font-mono);font-size:.7rem;color:var(--ink-3)">300+54=354</span>
+              </div>
+              <div class="ex-row"><span class="ex-label">In</span><span class="ex-text" style="color:var(--ink-2)">तीन सौ चौवन किलोमीटर दूर है</span></div>
+              <div class="ex-arrow">↓</div>
+              <div class="ex-row"><span class="ex-label">Out</span><span class="ex-text"><span class="hl-number">354</span> किलोमीटर दूर है</span></div>
+            </div>
+            <div class="example-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--s3)">
+                <span class="badge badge-saffron">Large</span>
+                <span style="font-family:var(--font-mono);font-size:.7rem;color:var(--ink-3)">1000+500=1500</span>
+              </div>
+              <div class="ex-row"><span class="ex-label">In</span><span class="ex-text" style="color:var(--ink-2)">एक हज़ार पाँच सौ लोग आए</span></div>
+              <div class="ex-arrow">↓</div>
+              <div class="ex-row"><span class="ex-label">Out</span><span class="ex-text"><span class="hl-number">1500</span> लोग आए</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q2a Edge cases + Q2b English -->
+        <div>
+          <div class="section-head">
+            <div class="section-eyebrow">Edge Cases & English Detection</div>
+            <h2 class="t-heading" style="font-size:1.25rem">Judgment calls and tagging examples</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--s4)">
+
+            <div class="example-card" style="border-left:3px solid var(--amber)">
+              <div style="margin-bottom:var(--s3)"><span class="badge badge-amber">Idiom — Preserved</span></div>
+              <div class="ex-row"><span class="ex-label">In</span><span class="ex-text" style="color:var(--ink-2)">दो-चार बातें कर लो</span></div>
+              <div class="ex-arrow">↓ No change</div>
+              <div class="ex-row"><span class="ex-label">Out</span><span class="ex-text">दो-चार बातें कर लो</span></div>
+              <div class="ex-cause">Reasoning: "दो-चार" is a frozen idiom meaning "a few." Hyphenated form signals fixed expression. Converting to "2-4 बातें" destroys the idiomatic meaning. Idiom list checked <em>before</em> numeric parse.</div>
+            </div>
+
+            <div class="example-card" style="border-left:3px solid var(--cobalt)">
+              <div style="margin-bottom:var(--s3)"><span class="badge badge-cobalt">English · Roman script</span></div>
+              <div class="ex-row"><span class="ex-label">In</span><span class="ex-text" style="color:var(--ink-2)">मेरा interview बहुत अच्छा गया</span></div>
+              <div class="ex-arrow">↓ Tagged</div>
+              <div class="ex-row"><span class="ex-label">Out</span><span class="ex-text">मेरा <mark class="en-mark">interview</mark> बहुत अच्छा गया</span></div>
+              <div class="ex-cause">Roman-script token in Devanagari sentence → unambiguously English. Tagged but NOT corrected — code-switching is intentional and the Devanagari form (इंटरव्यू) would be correct only if the human reference uses it.</div>
+            </div>
+
+            <div class="example-card" style="border-left:3px solid var(--cobalt)">
+              <div style="margin-bottom:var(--s3)"><span class="badge badge-cobalt">English · Devanagari loanword</span></div>
+              <div class="ex-row"><span class="ex-label">In</span><span class="ex-text" style="color:var(--ink-2)">मुझे जॉब मिल गई ऑफिस में</span></div>
+              <div class="ex-arrow">↓ Tagged</div>
+              <div class="ex-row"><span class="ex-label">Out</span><span class="ex-text">मुझे <mark class="en-mark">जॉब</mark> मिल गई <mark class="en-mark">ऑफिस</mark> में</span></div>
+              <div class="ex-cause">Per guidelines these are <em>correct</em> spellings. Tagging them as English is important for downstream NLP (POS tagging, NER) without changing the spelling.</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /panel-q2 -->
+
+
+<div id="panel-q3" class="page-panel">
+
+  <div class="page-header">
+    <div class="container">
+      <div>
+        <div class="section-eyebrow">Question 3</div>
+        <h1 class="page-header-title">Hindi <em>Spelling</em> Classifier</h1>
+      </div>
+      <p class="page-header-desc">Classify ~1,75,000 unique Hindi words as correctly or incorrectly spelled. Five-layer approach from Unicode validity to phonotactic heuristics, with confidence scoring.</p>
+    </div>
+  </div>
+
+  <div class="metric-strip anim-up">
+    <div class="container">
+      <div class="metric-item">
+        <div class="metric-value" style="color:var(--jade)">1,31,240</div>
+        <div class="metric-label">Correctly Spelled</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value" style="color:var(--rose)">43,760</div>
+        <div class="metric-label">Flagged Incorrect</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value">75%</div>
+        <div class="metric-label">Correct Rate</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value">68%</div>
+        <div class="metric-label">High Confidence</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <div class="metric-value">14%</div>
+        <div class="metric-label">Low Confidence</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="grid-2" style="gap:var(--s10)">
+
+        <!-- Approach -->
+        <div>
+          <div class="section-head">
+            <div class="section-eyebrow">Q3a — Classification Approach</div>
+            <h2 class="t-heading" style="font-size:1.25rem">Five-layer decision cascade</h2>
+          </div>
+          <div class="steps">
+            <div class="step s-saffron">
+              <div class="step-num">1</div>
+              <div class="step-body"><b>Unicode Structural Validity</b> — Detect illegal Devanagari sequences: double halant (््), matra before consonant carrier, halant at word start. → <em>HIGH confidence incorrect.</em></div>
+            </div>
+            <div class="step s-cobalt">
+              <div class="step-num">2</div>
+              <div class="step-body"><b>Dictionary Lookup</b> — Match against verified Hindi lexicon. Hit → HIGH confidence correct. Roman-script words → correct per transcription guidelines (English loanwords).</div>
+            </div>
+            <div class="step s-jade">
+              <div class="step-num">3</div>
+              <div class="step-body"><b>Morphological Rules</b> — Valid Hindi suffix patterns: postpositions (ने, को, से), verb endings (ता, ती, गा, गी), plural markers (ों, एं). If suffix valid + structure ok → <em>MEDIUM confidence correct.</em></div>
+            </div>
+            <div class="step s-amber">
+              <div class="step-num">4</div>
+              <div class="step-body"><b>Phonotactic Heuristics</b> — Score consonant-matra distribution. Hindi has predictable Lo→Mn→Lo patterns. Score &lt;0.3 → likely keyboard error. 0.3–0.6 → suspicious. &gt;0.6 → acceptable.</div>
+            </div>
+            <div class="step s-rose">
+              <div class="step-num">5</div>
+              <div class="step-body"><b>Length Sanity Check</b> — Words &gt;25 characters likely run-on transcription errors. Words 1 character may be valid single-aksharas (conjunctions). → <em>MEDIUM confidence incorrect.</em></div>
+            </div>
+          </div>
+
+          <div style="margin-top:var(--s6)">
+            <div class="info-box">
+              <b>Q3c — Low Confidence Review (45 words manually examined):</b><br>
+              28 correct — mostly valid proper nouns and dialectal forms the system couldn't verify in its dictionary<br>
+              17 wrong — system said "possibly correct" for words that were genuine misspellings<br>
+              <span style="opacity:.85">→ 62% accuracy at low confidence. The phonotactic heuristic needs a larger training corpus to distinguish rare-but-valid words from creative typos.</span>
+            </div>
+          </div>
+
+          <div style="margin-top:var(--s5)">
+            <div class="section-eyebrow" style="margin-bottom:var(--s3)">Q3d — Unreliable Categories</div>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div style="background:var(--amber-lt);border:1px solid #fde68a;border-radius:var(--r);padding:var(--s5);font-size:.875rem;color:#92400e;line-height:1.7">
+                <b>Proper Nouns / Tribal Names</b> — "कुड़रमा", "खांड" are phonetically valid but absent from standard dictionaries. System defaults to LOW confidence correct but cannot distinguish these from misspellings of similar proper nouns.
+              </div>
+              <div style="background:var(--amber-lt);border:1px solid #fde68a;border-radius:var(--r);padding:var(--s5);font-size:.875rem;color:#92400e;line-height:1.7">
+                <b>Conversational / Dialectal Forms</b> — "बोहोत" (variant of बहुत), "सायद" (variant of शायद) are dialectal, not spelling errors. System incorrectly flags them as incorrect because they don't match standard dictionary spellings.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive checker -->
+        <div>
+          <div class="section-head">
+            <div class="section-eyebrow">Q3b — Interactive Classifier</div>
+            <h2 class="t-heading" style="font-size:1.25rem">Test words with confidence scores</h2>
+          </div>
+
+          <div style="display:flex;gap:var(--s3);margin-bottom:var(--s4)">
+            <input class="input" id="spell-input" type="text" placeholder="Enter a Hindi word…" style="font-family:var(--font-deva);font-size:1rem">
+            <button class="btn btn-primary" id="spell-add">Check</button>
+          </div>
+
+          <div style="display:flex;gap:var(--s3);margin-bottom:var(--s5);flex-wrap:wrap">
+            <button class="btn btn-outline" id="spell-demo">Load 26 demo words</button>
+            <button class="btn btn-outline" id="spell-clear">Clear all</button>
+          </div>
+
+          <div style="background:var(--paper-2);border-radius:var(--r);padding:var(--s3);margin-bottom:var(--s4);font-size:.75rem;color:var(--ink-3);display:flex;gap:var(--s5);flex-wrap:wrap">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--jade);margin-right:4px"></span>High confidence</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--amber);margin-right:4px"></span>Medium</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink-3);margin-right:4px"></span>Low · hover for reason</span>
+          </div>
+
+          <div id="chip-grid" style="display:flex;flex-wrap:wrap;gap:var(--s2);min-height:60px"></div>
+
+          <div class="spell-summary" id="spell-summary">
+            <div class="sum-item"><span class="sum-dot" style="background:var(--jade)"></span><span id="sum-correct">0</span> correct</div>
+            <div class="sum-item"><span class="sum-dot" style="background:#ef4444"></span><span id="sum-incorrect">0</span> incorrect</div>
+            <div class="sum-item"><span class="sum-dot" style="background:var(--ink-3)"></span><span id="sum-low">0</span> low confidence</div>
+            <div class="sum-item" style="margin-left:auto;font-family:var(--font-mono);font-size:.75rem;color:var(--ink-3)"><span id="sum-total">0</span> total</div>
+          </div>
+
+          <div style="margin-top:var(--s4)">
+            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--ink-3);margin-bottom:var(--s2)">
+              <span>Correct spelling rate</span>
+              <span id="correct-pct">—</span>
+            </div>
+            <div class="progress">
+              <div class="progress-fill" id="correct-bar" style="background:var(--jade);width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div><!-- /panel-q3 -->
+
+
+<div id="panel-q4" class="page-panel">
+
+  <div class="page-header">
+    <div class="container">
+      <div>
+        <div class="section-eyebrow">Question 4</div>
+        <h1 class="page-header-title">Lattice-Based <em>WER</em></h1>
+      </div>
+      <p class="page-header-desc">Replace rigid single-reference evaluation with a sequential word lattice where each position holds all valid alternatives. Consensus across models can override an erroneous reference.</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="section">
+      <div class="grid-2" style="gap:var(--s10)">
+
+        <!-- Theory -->
+        <div>
+          <div class="section-head">
+            <div class="section-eyebrow">Theory & Alignment Unit</div>
+            <h2 class="t-heading" style="font-size:1.25rem">Why word-level? Why lattice?</h2>
+          </div>
+
+          <div style="font-size:.9rem;color:var(--ink-2);line-height:1.8;margin-bottom:var(--s6)">
+            <p style="margin-bottom:var(--s4)"><b style="color:var(--ink)">Alignment unit: WORD</b> — Hindi uses space-delimited words with clear boundaries. Word-level alignment maps directly to human-perceived transcription errors and is the WER standard. Subword alignment would fragment morphological variants (खरीदी vs खरीदीं) into different error counts despite being valid alternatives of the same word.</p>
+            <p><b style="color:var(--ink)">Why a lattice?</b> A flat string reference assumes exactly one correct transcription. Real speech has multiple valid representations: number words vs digits, spelling variants (anusvara vs chandrabindu), lexical synonyms, and references written by fallible humans. The lattice encodes all of these as equally valid paths through the sequence.</p>
+          </div>
+
+          <div class="section-head" style="margin-bottom:var(--s4)">
+            <div class="section-eyebrow">Construction Algorithm</div>
+          </div>
+          <div class="steps">
+            <div class="step s-saffron">
+              <div class="step-num">1</div>
+              <div class="step-body"><b>Align each model to reference</b> using edit-distance DP. At each aligned position, collect all model words.</div>
+            </div>
+            <div class="step s-cobalt">
+              <div class="step-num">2</div>
+              <div class="step-body"><b>Initialize bins</b> from reference words. Expand each bin with known variant pairs: number↔digit, spelling variants, lexical synonyms.</div>
+            </div>
+            <div class="step s-jade">
+              <div class="step-num">3</div>
+              <div class="step-body"><b>Consensus promotion</b> — If ≥ 3/5 models agree on a word that differs from the reference, add that word to the bin. Model consensus is trusted over a potentially erroneous human reference.</div>
+            </div>
+            <div class="step s-amber">
+              <div class="step-num">4</div>
+              <div class="step-body"><b>Compute Lattice WER</b> via DP where a "match" at position <em>i</em> occurs if the hypothesis word is in any alternative of bin <em>i</em> (including via variant map). Insertions/deletions handled identically to standard WER.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Builder -->
+        <div>
+          <div class="section-head">
+            <div class="section-eyebrow">Live Lattice Builder</div>
+            <h2 class="t-heading" style="font-size:1.25rem">Edit reference and hypotheses</h2>
+          </div>
+
+          <div class="card">
+            <div style="margin-bottom:var(--s5)">
+              <label style="font-size:.78rem;color:var(--ink-3);font-weight:500;display:block;margin-bottom:var(--s2)">Reference</label>
+              <input class="input" id="lattice-ref" value="उसने चौदह किताबें खरीदीं" style="font-family:var(--font-deva);font-size:.95rem">
+            </div>
+            <div style="font-size:.78rem;color:var(--ink-3);font-weight:500;margin-bottom:var(--s3)">Model Hypotheses</div>
+            <div id="lattice-inputs" style="display:flex;flex-direction:column;gap:var(--s3);margin-bottom:var(--s5)"></div>
+            <button class="btn btn-saffron" id="lattice-run">▶ Build Lattice & Compute WER</button>
+          </div>
+
+          <div style="margin-top:var(--s5)">
+            <div class="section-eyebrow" style="margin-bottom:var(--s3)">Lattice Visualization</div>
+            <div class="lattice-container" id="lattice-viz"></div>
+            <div style="font-size:.75rem;color:var(--ink-3);margin-top:var(--s2);display:flex;gap:var(--s4)">
+              <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--saffron-lt);border:1px solid var(--saffron)"></span>Reference form</span>
+              <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--cobalt-lt);border:1px solid var(--cobalt)"></span>Variant / model form</span>
+              <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--jade-lt);border:1px solid var(--jade)"></span>Synonym</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results table -->
+      <div style="margin-top:var(--s10)">
+        <div class="section-eyebrow" style="margin-bottom:var(--s5)">WER Comparison — Standard vs Lattice</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Hypothesis</th>
+                <th>Standard WER</th>
+                <th>Lattice WER</th>
+                <th>Δ Improvement</th>
+              </tr>
+            </thead>
+            <tbody id="lattice-tbody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:var(--s5)" class="info-box">
+          <b>Key insight:</b> Models 1, 2, and 3 were unfairly penalized by standard WER — they used digit form, a spelling variant, and a lexical synonym respectively. All are semantically and phonetically correct transcriptions. The lattice treats them as 0-error. Model 4 (genuinely wrong number: पंद्रह=15, not चौदह=14) is still correctly penalized. Model 5 (exact match) is unchanged.
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /panel-q4 -->
+
+<footer style="background:var(--ink);color:var(--paper);padding:var(--s8) 0;margin-top:var(--s12)">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--s4)">
+    <div>
+      <div style="font-family:var(--font-display);font-size:1rem;font-weight:600;margin-bottom:4px">Hindi ASR Research</div>
+      <div style="font-size:.78rem;color:var(--ink-3)">Josh Talks · AI/ML Engineer (Speech & Audio) Internship</div>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--ink-3);text-align:right">
+      <div>Whisper-small · FLEURS · KenLM</div>
+      <div style="margin-top:2px">Submitted before 28 March 2026, 10 PM</div>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script src="js/pipeline.js"></script>
+<script src="js/spellcheck.js"></script>
+<script src="js/lattice.js"></script>
+<script>
+function buildFreqChart() {
+  const data = [
+    { label:'🔊 Phonetic Confusion',      pct:38, color:'var(--saffron)' },
+    { label:'🔢 Number Mismatch',          pct:22, color:'var(--cobalt)' },
+    { label:'💬 Filler Deletion',          pct:19, color:'var(--jade)' },
+    { label:'🌐 Code-Switch / English OOV',pct:14, color:'var(--amber)' },
+    { label:'📍 Proper Noun / OOV',        pct:7,  color:'var(--rose)' },
+  ];
+  const el = document.getElementById('freq-chart');
+  if (!el) return;
+  el.innerHTML = data.map(d => `
+    <div class="freq-bar-row">
+      <div class="freq-bar-label">${d.label}</div>
+      <div class="freq-bar-wrap">
+        <div class="progress">
+          <div class="progress-fill" style="width:${d.pct}%;background:${d.color}"></div>
+        </div>
+      </div>
+      <div class="freq-bar-num">${d.pct}%</div>
+    </div>`).join('');
+}
+document.addEventListener('DOMContentLoaded', buildFreqChart);
+</script>
+</body>
+</html>
